@@ -4,6 +4,7 @@ from PIL import Image
 from openslide import AbstractSlide, _OpenSlideMap
 
 from kfbslide import utils
+from tqdm import tqdm
 
 
 class kfbRef:
@@ -111,7 +112,7 @@ def open_kfbslide(filename):
 
 import numpy as np
 class kfb:
-    def __init(self,path):
+    def __init__(self,path):
         self.slide = TSlide(path)
         self.patch_size = 4000
         
@@ -123,13 +124,14 @@ class kfb:
         return header
 
     def read(self,level = 0):
+        patch_size=self.patch_size
         [x, y] = self.slide.level_dimensions[level]
         print("Resolution --> {}, {}".format(x,y))
         image = np.zeros([y,x,3],np.uint8)
         x_range = list(range(0,x,patch_size))
         y_range = list(range(0,y,patch_size))
-        for i in x_range:
-            for j in y_range:
+        for i in tqdm(x_range):
+            for j in tqdm(y_range):
                 x_size = y_size = patch_size
                 if i == max(x_range):
                     x_size = x-i

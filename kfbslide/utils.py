@@ -7,7 +7,7 @@ from itertools import count
 from openslide import lowlevel
 
 print(os.getcwd())
-_lib = cdll.LoadLibrary('/home/liubo/kfbprocess/kfbslide/lib/libkfbslide.so')
+_lib = cdll.LoadLibrary('/home/xuehao/code_projs/WSI-SDK/kfbslide/lib/libkfbslide.so')
 
 
 class KFBSlideError(Exception):

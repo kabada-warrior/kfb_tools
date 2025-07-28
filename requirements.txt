@@ -5,3 +5,10 @@ WSI-SDK is based on Python 2.7, Linux. For using it you need to get below softwa
   Then, install python I/O interface by pip install openslide
 2.OpenCV
   Easily, pip install opencv-python
+
+  python 3.9
+  pip install openslide-python
+  pip install openslide-bin
+  pip install opencv-python
+  export LD_LIBRARY_PATH=~/WSI-SDK/kfbslide/lib:$LD_LIBRARY_PATH
+
