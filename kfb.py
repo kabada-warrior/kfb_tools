@@ -123,25 +123,62 @@ class kfb:
             header[key] = np.array(val)
         return header
 
-    def read(self,level = 0):
-        patch_size=self.patch_size
+    # def read(self,level = 0):
+    #     patch_size=self.patch_size
+    #     [x, y] = self.slide.level_dimensions[level]
+    #     print("Resolution --> {}, {}".format(x,y))
+    #     image = np.zeros([y,x,3],np.uint8)
+    #     x_range = list(range(0,x,patch_size))
+    #     y_range = list(range(0,y,patch_size))
+    #     for i in tqdm(x_range):
+    #         for j in tqdm(y_range):
+    #             x_size = y_size = patch_size
+    #             if i == max(x_range):
+    #                 x_size = x-i
+    #             if j == max(y_range):
+    #                 y_size = y-j
+    #             patch =  np.array(self.slide.read_region((i ,j) ,level ,(x_size ,y_size)))
+    #             if patch.shape[2] == 4:
+    #                 r, g, b, a = cv2.split(patch)
+    #                 patch = cv2.merge([r, g, b])
+    #             image[j:j+y_size,i:i+x_size,:] = patch 
+    #     return image
+
+    def read(self, level=0, max_workers=16, use_threads=True):
+        from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+        patch_size = self.patch_size
         [x, y] = self.slide.level_dimensions[level]
-        print("Resolution --> {}, {}".format(x,y))
-        image = np.zeros([y,x,3],np.uint8)
-        x_range = list(range(0,x,patch_size))
-        y_range = list(range(0,y,patch_size))
-        for i in tqdm(x_range):
-            for j in tqdm(y_range):
-                x_size = y_size = patch_size
-                if i == max(x_range):
-                    x_size = x-i
-                if j == max(y_range):
-                    y_size = y-j
-                patch =  np.array(self.slide.read_region((i ,j) ,level ,(x_size ,y_size)))
-                if patch.shape[2] == 4:
-                    r, g, b, a = cv2.split(patch)
-                    patch = cv2.merge([r, g, b])
-                image[j:j+y_size,i:i+x_size,:] = patch 
+        print("Resolution --> {}, {}".format(x, y))
+        image = np.zeros([y, x, 3], np.uint8)
+        
+        # 定义并行处理的补丁读取函数
+        def read_patch(args):
+            slide, i, j, level, patch_size, x, y = args
+            x_size = y_size = patch_size
+            if i + patch_size > x:
+                x_size = x - i
+            if j + patch_size > y:
+                y_size = y - j
+            patch = np.array(slide.read_region((i, j), level, (x_size, y_size)))
+            if patch.shape[2] == 4:
+                r, g, b, a = cv2.split(patch)
+                patch = cv2.merge([r, g, b])
+            return (i, j, x_size, y_size, patch)
+        
+        # 创建任务列表
+        tasks = [(self.slide, i, j, level, patch_size, x, y) 
+                 for i in range(0, x, patch_size) 
+                 for j in range(0, y, patch_size)]
+        
+        # 根据use_threads参数选择使用线程池还是进程池
+        ExecutorClass = ThreadPoolExecutor if use_threads else ProcessPoolExecutor
+        with ExecutorClass(max_workers=max_workers) as executor:
+            results = list(tqdm(executor.map(read_patch, tasks), total=len(tasks)))
+        
+        # 组合结果
+        for i, j, x_size, y_size, patch in results:
+            image[j:j+y_size, i:i+x_size, :] = patch
+        
         return image
 
 
